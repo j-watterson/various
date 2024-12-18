@@ -1,3 +1,11 @@
+# This script fetches a table from a publicly accessible Google Docs document, parses the table data, 
+# and prints it as a grid of characters in a specific layout. The table is expected to have at least 
+# three columns: 'x-coordinate', 'y-coordinate', and 'Character', where the x and y values represent 
+# the positions of characters in a 2D grid. The characters are then arranged and printed row by row 
+# to visually represent the grid. The code uses the `requests` library to fetch the document, `BeautifulSoup` 
+# to parse the HTML, and `pandas` to process the table data. The resulting grid is printed in reverse order 
+# of the y-coordinates, starting from the highest y-value.
+
 import requests
 from collections import defaultdict
 import pandas as pd
