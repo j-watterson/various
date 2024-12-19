@@ -1,0 +1,156 @@
+---
+title: "Categorial Variables and Factors Assignment"
+author: ''
+date: ''
+---
+# Please complete all the tasks listed below. After completing the tasks download the .Rmd file and upload in the peer review item for grading.
+
+# Additionally please write text between the code chunks explaining what each code chunk is about.
+
+# Refer the linked online textbook in case of any issues.
+
+Load the stringr and forcats library
+
+```{r}
+
+library(stringr)
+library(forcats)
+library(ggplot2)
+
+```
+
+1.From the "forcats" library load gss_cat data. Explore the distribution of rincome (reported income). What makes the default bar chart hard to understand? How could you improve the plot?
+
+Here is the default bar chart, the x labels are only partially available and it's not clear where the non-labeled ones are. The labels are in descending order.
+
+```{r, error=TRUE}
+plot <- ggplot(gss_cat, aes(rincome)) +
+  geom_bar() +
+  scale_x_discrete(drop = FALSE)
+
+plot
+
+```
+
+To improve the chart, use factors and fix the labels.
+
+```{r}
+
+income_levels <- c("Lt $1000", "$1000 to 2999", "$3000 to 3999", "$4000 to 4999", 
+                   "$5000 to 5999", "$6000 to 6999", "$7000 to 7999", "$8000 to 9999", 
+                   "$10000 - 14999", "$15000 - 19999", "$20000 - 24999", "$25000 or more", 
+                   "Not applicable", "Refused", "Don't know", "No answer")
+
+# Convert rincome to a factor with defined levels
+gss_cat$rincome <- factor(gss_cat$rincome, levels = income_levels)
+
+# Plot
+plot <- ggplot(gss_cat, aes(x = rincome)) +
+  geom_bar() +
+  scale_x_discrete(drop = FALSE) +  # Ensures all levels are shown
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Improve label readability
+
+plot
+
+```
+
+
+2. What is the most common religion? What is the most common partyid?
+
+Most common party is independent. Most common religion is Protestant.
+
+```{r}
+data <- forcats::gss_cat
+
+#Look at the parties
+summary(data$partyid)
+
+##The max partyID from the data set is:
+max(summary(data$partyid))
+which.max(table(data$partyid))
+
+#Look at the religions
+summary(data$relig)
+
+##The max religion from the data set is:
+max(summary(data$relig))
+which.max(table(data$relig))
+
+```
+
+3.Which relig does denom (denomination) apply to? How can you find out with a table? How can you find out with a visualisation?
+
+
+```{r}
+
+data <- forcats::gss_cat
+
+# Create a contingency table
+table_relig_denom <- table(data$relig, data$denom)
+
+knitr::kable(table_relig_denom)
+
+# Plot
+ggplot(data, aes(x = relig, fill = denom)) +
+  geom_bar(position = "fill") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Distribution of Denominations by Religion", x = "Religion", y = "Proportion")
+
+```
+
+
+
+4.How have the proportions of people identifying as Democrat, Republican, and Independent changed over time? Plot a suitable chart.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Prepare the data by grouping and summarizing
+party_time_series <- data %>%
+  group_by(year, partyid) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  mutate(total = sum(count), proportion = count / total)
+
+# Filter for major party categories to simplify the plot
+party_time_series <- party_time_series %>%
+  filter(partyid %in% c("Strong democrat", "Not str democrat", "Independent", "Strong republican", "Not str republican", "Ind,near dem", "Ind,near rep"))
+
+# Plotting
+ggplot(party_time_series, aes(x = year, y = proportion, fill = partyid)) +
+  geom_bar(stat = "identity", position = "fill") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(x = "Year", y = "Proportion", title = "Change in Party Affiliation Over Time", fill = "Party") +
+  theme_minimal()
+
+```
+
+
+
+
+5.Collapse "rincome" into smaller set of categories?
+
+```{r}
+library(dplyr)
+
+# Assuming 'data' is your dataframe and 'rincome' is the income column
+
+# Recategorize income into broader categories
+data <- data %>%
+  mutate(rincome_group = case_when(
+    rincome %in% c("$3000 to 3999", "$5000 to 5999", "$8000 to 9999", "$7000 to 7999", "$1000 to 2999", "Lt $1000") ~ "Low Income",
+    rincome %in% c("$10000 - 14999", "$15000 - 19999", "$20000 - 24999") ~ "Middle Income",
+    rincome %in% c("$25000 or more") ~ "High Income",
+    rincome %in% c("Not applicable", "Refused", "Don't know", "No answer") ~ "Unknown",
+    TRUE ~ "Other"
+  ))
+
+# Check the modified data
+table(data$rincome_group)
+
+
+
+```
+
+
+
