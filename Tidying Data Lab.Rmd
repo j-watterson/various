@@ -1,0 +1,210 @@
+---
+title: "Tidying Data Assignment"
+author: ''
+date: ''
+output:
+  html_document:
+    df_print: paged
+---
+# Please complete all the tasks listed below. After completing the tasks download the .Rmd file and upload in the peer review item for grading.
+
+# Additionally please write text between the code chunks explaining what each code chunk is about.
+
+# Refer the linked online textbook in case of any issues.
+
+Load the tidyverse library
+```{r}
+library(tidyverse)
+```
+
+##### Question 1. 
+
+The built in billboard dataset is not tidy. Describe why it is not tidy and then tidy the dataset.
+
+The built-in billboard dataset in R is not tidy due to several violations of tidy data principles. Firstly, each variable is not forming a column; instead, variables like artist, track, date.entered, wk1 (week 1), wk2 (week 2), etc., are spread across multiple columns. Secondly, each observation does not form a row; while each row represents a single track, the weekly rankings (wk1, wk2, etc.) are horizontally spread across columns rather than being stacked vertically. Lastly, the dataset combines information about tracks with metadata about the artist and the date of entry into the Billboard charts, thus failing to separate different observational units into distinct tables, complicating data analysis tasks.
+
+```{r question-1-response}
+
+
+# Tidy the dataset
+tidy_billboard_long <- billboard %>%
+  # First gather up all the week entries into a row for each week for each song (where there is an entry)
+  pivot_longer(cols = starts_with("wk"), 
+               names_to = "week", 
+               values_to = "rank", 
+               names_prefix = "wk") %>%
+  drop_na(rank)
+  #tidy_billboard_long
+  
+  # Then, convert the week variable to a number and figure out the date corresponding to each week on the chart
+tidy_billboard_convert <- tidy_billboard_long %>%
+  mutate(
+    week = as.numeric(str_extract(week, "\\d+")),  # Extract numeric part from the 'week' column and convert to numeric
+    date.entered = as.Date(date.entered, format = "%Y-%m-%d"),  # Make sure date.entered is in Date format
+    date = date.entered + 7*(week-1)  # Calculate current date by adding weeks to date.entered
+  )
+  #tidy_billboard_convert
+
+  # Sort the data by artist, track and week.
+  tidy_billboard <- tidy_billboard_convert %>% arrange(artist, track, week) 
+
+# Display the first few entries
+tidy_billboard
+
+
+#Here are what your first entries should be (formatting can be     different):
+#>  A tibble: 5,307 x 5
+#   artist  track                   date.entered  week  rank   date
+ #    <chr>   <chr>                   <date>       <int> <dbl>   <date>
+ #  1 2 Pac   Baby Don't Cry (Keep... 2000-02-26       1    87 2000-02-26
+ #  2 2 Pac   Baby Don't Cry (Keep... 2000-02-26       2    82 2000-03-04
+ #  3 2 Pac   Baby Don't Cry (Keep... 2000-02-26       3    72 2000-03-11
+ #  4 2 Pac   Baby Don't Cry (Keep... 2000-02-26       4    77 2000-03-18
+ #  5 2 Pac   Baby Don't Cry (Keep... 2000-02-26       5    87 2000-03-25
+ #  6 2 Pac   Baby Don't Cry (Keep... 2000-02-26       6    94 2000-04-01
+ #  7 2 Pac   Baby Don't Cry (Keep... 2000-02-26       7    99 2000-04-08
+ #  8 2Ge+her The Hardest Part Of ... 2000-09-02       1    91 2000-09-02
+ #  9 2Ge+her The Hardest Part Of ... 2000-09-02       2    87 2000-09-09
+ # 10 2Ge+her The Hardest Part Of ... 2000-09-02       3    92 2000-09-16
+ # … with 5,297 more rows
+
+```
+
+##### Question 2. 
+
+Tidy the "fish_encounters" dataset of fish spotting by monitoring stations. Make the NA into 0 using the option "values_fill = list(seen = 0)"
+
+
+```{r question-2-response, error=TRUE}
+
+
+# Tidying the dataset
+tidy_fish <- fish_encounters %>%
+  pivot_wider(
+    names_from = station,        # Define how to create new column names
+    values_from = seen,          # Define which values to spread across the new columns
+    values_fill = list(seen = 0) # Fill NA values with 0
+  )
+
+# View the tidied dataset
+print(tidy_fish)
+
+
+```
+
+##### Question 3. 
+
+Import the flowers1 dataset. Tidy and pivot the data. Hint: use "read_csv2()" to read in the dataset 
+
+```{r question-3-response, warning=FALSE}
+
+# Read the dataset
+flowers_data <- read_csv2("flowers1.csv")
+
+# Tidy the data: handle numeric conversion
+flowers_data <- flowers_data %>%
+  mutate(Value = as.numeric(gsub(",", ".", Value)))  # Replace commas with dots and convert to numeric
+
+# Pivot the data to wide format
+tidy_flowers <- flowers_data %>%
+  pivot_wider(
+    names_from = Variable,
+    values_from = Value
+  )
+
+# View the tidied data
+tidy_flowers
+
+```
+
+##### Question 4.
+
+Import the flowers2 dataset. Tidy the dataset by turning the one column into 3 separate columns
+
+```{r question-4-response}
+
+# Read the dataset
+flowers_data <- read_csv2("flowers2.csv", col_names = c("Flowers/Intensity", "Time"))
+
+# Split the 'Flowers/Intensity' column into 'Flowers' and 'Intensity'
+flowers_data <- flowers_data %>%
+  separate(`Flowers/Intensity`, into = c("Flowers", "Intensity"), sep = "/", convert = TRUE)
+
+# View the tidied data
+flowers_data
+
+```
+
+##### Question 5.
+
+In the following dataset, turn the implicit missing values to explicit 
+
+```{r question-5-response, warning = FALSE}
+output <- tibble(
+      treatment   = c("a", "b", "a", "c", "b"),
+      gender   = factor(c("M", "F", "F", "M", "M"), levels = c("M", "F", "O")),
+      return = c(1.5, 0.75,  0.5,  1.8,  NA)
+    )
+
+# Explicitly handle missing values
+output <- output %>%
+  mutate(across(where(is.factor), fct_explicit_na, na_level = "Missing"),
+         across(where(is.numeric), ~ replace_na(., 0)))  # Replacing NA in numeric columns with 0 (if needed)
+
+# Print the modified tibble
+output
+
+```
+
+
+#####Question 6.
+
+Import the weather dataset as weather. Use "pivot_longer()" to put the days all in one column, then use "pivot_wider" to separate tmax and tmin into separate columns. Print the summary of the final resulting dataset 
+
+```{r question-6-response}
+
+# Read the dataset
+weather <- read_csv("weather.csv")
+
+# Pivot to longer format
+weather_long <- weather %>%
+  pivot_longer(
+    cols = starts_with("d"),
+    names_to = "day",
+    values_to = "value"
+  )
+
+# Pivot to wider format
+weather_wide <- weather_long %>%
+  pivot_wider(
+    names_from = element,
+    values_from = value
+  )
+
+#Final Data Set
+weather_wide
+
+# Print the summary of the final dataset
+summary(weather_wide)
+  
+
+```
+
+###### Question 7. 
+
+Load the built in "anscombe" data frame and use "pivot_longer()" to separate all the x and y columns and categorize them into 4 sets
+
+```{r question-7-response}
+
+# Reshape the dataset into a longer format
+anscombe_long <- anscombe %>%
+  pivot_longer(
+    everything(), 
+    names_to = c(".value", "set"), 
+    names_pattern = "(.)(.)"
+  )
+
+# Print the transformed data
+anscombe_long
+
+```
